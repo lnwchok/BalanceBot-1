@@ -75,6 +75,7 @@ void loop(){
 //  Serial.print(" >> ");
 //  Serial.println(gyroRoll);  
 
+
   Serial.print(gyroRateX);
   Serial.print("\t");
   Serial.print(gyroRateY);
