@@ -14,15 +14,34 @@ int y;
 int z;
 float gyrobiasX, gyrobiasY, gyrobiasZ;
 float gyroRateX, gyroRateY, gyroRateZ;
-double gyroRoll;
+double gyroRoll = 0;
 uint32_t timer;
+float timeStep = 0.2; //(0.2 sec) 200ms for time step value
 
 void setup(){
+  float totalbiasX = 0;
+  float totalbiasY = 0;
+  float totalbiasZ = 0;
   Wire.begin();
   Serial.begin(9600);
   Serial.println("starting up L3G4200D");
   setupL3G4200D(2000); // Configure L3G4200  - 250, 500 or 2000 deg/sec
   delay(1000); //wait for the sensor to be ready 
+
+  for (int i=1; i<100; i++){
+    getGyroValues();
+    totalbiasX += (int)x;
+    totalbiasY += (int)y;
+    totalbiasZ += (int)z;
+    delay(1);
+  }
+
+ // Final bias values for every axis  
+  gyrobiasX = totalbiasX / 100;
+  gyrobiasY = totalbiasY / 100;
+  gyrobiasZ = totalbiasZ / 100;
+  Serial.print("RateX\tRateY\tRateZ\n");
+
 }
 
 void loop(){
@@ -35,34 +54,40 @@ void loop(){
 //  Serial.print(", ");
 //  Serial.println(z);
 //  delay(200); //Just here to slow down the serial to make it more readable
-  timer = micros();
-  for (int i=1; i<100; i++){
-    getGyroValues();
-    gyrobiasX += (int)x;
-    gyrobiasY += (int)y;
-    gyrobiasZ += (int)z;
-    delay(1);
-  }
+
+  timer = micros(); //initial time for loop taken
   
-  gyrobiasX = gyrobiasX / 100;
-  gyrobiasY = gyrobiasY / 100;
-  gyrobiasZ = gyrobiasZ / 100;
-  
-  gyroRateX = -((int)x - gyrobiasX)*.07;
-  gyroRateY = -((int)y - gyrobiasY)*.07; 
+  getGyroValues();
+  gyroRateX = ((int)x - gyrobiasX)*.07;
+  gyroRateY = ((int)y - gyrobiasY)*.07; 
   gyroRateZ = ((int)z - gyrobiasZ)*.07;
   
-  gyroRoll += gyroRateX * ((double)(micros() - timer)/1000000);
+  gyroRoll += gyroRateX * timeStep;
   
-  Serial.print(millis());
-  Serial.print(", ");
-  Serial.print(gyrobiasX);
-  Serial.print(", ");
-  Serial.print(gyrobiasY);
-  Serial.print(", ");
-  Serial.print(gyrobiasZ);  
-  Serial.print(" >> ");
-  Serial.println(gyroRoll);  
+//  Serial.print(millis());
+//  Serial.print(", ");
+//  Serial.print(gyroRateX);
+//  Serial.print(", ");
+//  Serial.print(gyroRateY);
+//  Serial.print(", ");
+//  Serial.print(gyroRateZ);  
+//  Serial.println(gyroRateZ);  
+//  Serial.print(" >> ");
+//  Serial.println(gyroRoll);  
+
+  Serial.print(gyroRateX);
+  Serial.print("\t");
+  Serial.print(gyroRateY);
+  Serial.print("\t");
+  Serial.print(gyroRateZ);
+  Serial.print("\t");
+  Serial.println(gyroRoll);
+  
+  timer = micros() - timer;
+  timer = ((timeStep * 1000000) - timer)/1000;
+  delay(timer);
+//  delay(400);
+
 }
 
 void getGyroValues(){
