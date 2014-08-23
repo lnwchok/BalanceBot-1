@@ -72,9 +72,77 @@ void setup(){
   Serial.print("Initial Pitch angle >> ");
   Serial.println(initPitch);
   
+  InitialValues();
   
   Serial.print("RateX\tRateY\tRateZ\n");
 
+}
+
+double InitialPitch;
+
+void InitialValues(){
+  
+  //  Accelerometer   
+//  sensors_event_t event; 
+  double InitialAngle = 0;
+  double dGyro = 0;
+  for(int i=1; i < 100; i++){      // Takes 100 values to get more precision
+    
+//    accel.getEvent(&event);
+//    accRoll = (atan2(event.acceleration.y-accBiasY,-(event.acceleration.z-accBiasZ))+PI)*RAD_TO_DEG;
+
+//  acc.read(&Xg, &Yg, &Zg);
+//  accPitch = (atan2(-Yg, Zg)*180.0)/M_PI;
+//  if (accPitch < 0) {
+//    accPitch = -(accPitch + 180);
+//  } else {
+//    accPitch = 180 - accPitch;
+//  }
+  
+        
+//  getGyroValues();
+//  gyroRateX = ((int)x - gyrobiasX)*.07; 
+//
+//  dGyro = gyroRateX * ((double)(micros() - timer)/1000000);
+//  
+  InitialAngle = 0.98* (InitialAngle + get_gyroRateRoll(gyrobiasX)) + 0.02 * (getAccPitch());
+  timer = micros();
+  
+  delay(1);
+  
+  }
+ 
+  InitialPitch = InitialAngle;
+  
+  Serial.print("Pitch Initial: ");
+  Serial.println(InitialPitch);
+  
+}
+
+double getAccPitch() {
+  double _accPitch;
+  acc.read(&Xg, &Yg, &Zg);
+  _accPitch = (atan2(-Yg, Zg)*180.0)/M_PI;
+  if (_accPitch < 0) {
+    _accPitch = -(_accPitch + 180);
+  } else {
+    _accPitch = 180 - _accPitch;
+  }
+  return _accPitch;
+}
+
+double get_gyroRateRoll(float rollbias){
+  
+  getGyroValues();     // Get values from gyro
+  
+  // read raw angular velocity measurements from device  
+  float gyrorate = ((int)x - rollbias)*.07; 
+  
+//  double dgyroRoll = gyroRateX * ((double)(micros() - timer)/1000000);
+  double dgyroRoll = gyroRateX * timeStep;
+  
+  return dgyroRoll;
+  
 }
 
 void loop(){
@@ -92,14 +160,15 @@ void loop(){
   
   getGyroValues();
   gyroRateX = ((int)x - gyrobiasX)*.07;
-  gyroRateY = ((int)y - gyrobiasY)*.07; 
-  gyroRateZ = ((int)z - gyrobiasZ)*.07;
-  
-  gyroPitch += gyroRateX * ((double)(micros() - timer/1000000)/1000000);
+//  gyroRateY = ((int)y - gyrobiasY)*.07; 
+//  gyroRateZ = ((int)z - gyrobiasZ)*.07;
+//  
+//  gyroPitch += gyroRateX * ((double)(micros() - timer)/1000000);
+  gyroPitch += gyroRateX * timeStep;
   
   acc.read(&Xg, &Yg, &Zg);
 //  accPitch = (atan2(Xg - accbiasX, sqrt((Yg - accbiasY)*(Yg - accbiasY) + (Zg - accbiasZ)*(Zg - accbiasZ)))*180)/M_PI;
-  accPitch = (atan2(-Yg, Zg)*180.0)/M_PI;
+  accPitch = (atan2(-(Yg-accbiasY), (Zg-accbiasZ))*180.0)/M_PI;
   if (accPitch < 0) {
     accPitch = -(accPitch + 180);
   } else {
@@ -130,9 +199,6 @@ void loop(){
   Serial.print("\t");
   Serial.print(accPitch);
   Serial.print("\t");
-//  double ttt = (double)(micros() - timer)/1000;
-//  Serial.print(ttt);
-//  Serial.print("\t");
   Serial.println(PitchAngle);
   
 //  timer = micros() - timer;
@@ -141,6 +207,10 @@ void loop(){
 //  delay(400);
 
 }
+
+//////////////////////////////////////////////////////////
+//   GYRO FUNCTION by Jim Lindblom of Sparkfun's code   //
+//////////////////////////////////////////////////////////
 
 void getGyroValues(){
   byte xMSB = readRegister(L3G4200D_Address, 0x29);
